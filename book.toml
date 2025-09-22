@@ -1,0 +1,5 @@
+[book]
+authors = ["Daniel Mason"]
+language = "en"
+src = "src"
+title = "Advanced Rust In Easy Steps"
