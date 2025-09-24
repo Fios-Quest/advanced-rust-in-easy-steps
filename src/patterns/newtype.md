@@ -41,8 +41,8 @@ println!("{what_is_this_number}");
 
 It's an advert for this book!
 
-Types turn data into information. Without knowing that what we're looking at is a number or a sequence of ascii
-characters, we'd have a really hard time writing code and, more importantly, what we write would be very error-prone.
+Types turn data into information. Without knowing whether we're looking at a number or a sequence of ascii characters,
+ we'd have a really hard time writing code and, more importantly, what we write would be very error-prone.
 
 Without type information, there's nothing stopping us from accidentally passing a boolean to a function that expects
 a complex user structure. We start having to depend constantly on runtime checks to make sure the data our functions
@@ -115,7 +115,9 @@ fn get_english_month_name(month: u64) -> String {
 # let month: u64 = 9;
 # let day: u64 = 24;
 # 
+println!("{}", get_english_month_name(month));
 println!("{}", get_english_month_name(day));
+# assert_eq!(get_english_month_name(month), "September".to_string());
 # assert_eq!(get_english_month_name(day), "Invalid Month".to_string());
 # }
 ```
@@ -338,5 +340,119 @@ println!("Enum bytes: {enum_bytes:?}");
 # assert_eq!(struct_bytes, enum_bytes);
 ```
 
+Tradeoffs
+---------
 
+There seems to be a lot of extra work going on here. We need to add more validation, extra error types (and all the
+extra work they're supposed to involve that we skipped here), not to mention how verbose the match statements were for
+the enum version of our month newtype.
+
+That's true.
+
+But, you could say the same about writing tests. Often times your unit tests alone will be 2-3x the length of your
+non-test code, let alone anything you write for integration testing, end to end testing, etc.
+
+With unit testing we accept that:
+1. Writing your tests first (or as early as possible) helps you reason about your code
+2. They make sure silly mistakes don't slip through, costing us a lot more time later
+3. Test code tends to be quite routine, you don't need to think too hard about them and there are few surprises
+
+I'd argue this is all true of newtype code too.
+1. newtypes help you reason about your data structures in meaningful ways to the problem domain
+2. They add layers of protection to stop silly mistakes costing a lot of time later
+3. Once you're used to them, they become routine, they need little thought and there are few surprises
+
+You might point out that the extra newtype code also needs testing which, as I just said, could easily be 2-3x the
+length of the code being tested, however, I'd ask you to think about what you're testing.
+
+Let's think about a more complex type, like an email. Using built in types, we just create a validator and call it done:
+
+```rust
+fn is_valid_email_address<S>(email: S) -> bool
+    where S: AsRef<str>
+{
+    let s = email.as_ref();
+    // Must contain an @ that's not the first or last character
+    s.contains('@')
+        && s.chars().next() != Some('@')
+        && s.chars().last() != Some('@')
+}
+
+// Tests
+assert!(is_valid_email_address("a@b"));
+assert!(!is_valid_email_address("@ab"));
+assert!(!is_valid_email_address("ab@"));
+```
+
+This code is simple and terse, and doesn't require much testing. However, everytime we want to use a string as an email,
+we will need to run the validator. This not only could risk the same email needing to be validated multiple times, but
+adds some significant risk, particularly as our code evolves. Any time we _don't_ use the validator for a function that
+accepts an email string because we perhaps initially create it only in a context where the string has already been
+validated, we risk that function being reused with no validation later.
+
+> It's worth noting,  we're using my "good enough, no false negatives" approach rather than a complex regex or parser,
+> which would be even more computationally expensive! See https://emailregex.com/ for a completely compliant regex
+> validation string but... if you really want to know if an email address is valid... email it.
+
+Here's a newtype representing an Email:
+
+```rust
+use std::fmt;
+use std::error::Error;
+
+#[derive(Debug)]
+struct InvalidEmailAddressError;
+
+impl fmt::Display for InvalidEmailAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Invalid Email Address")
+    }      
+}
+
+impl Error for InvalidEmailAddressError {}
+
+struct EmailAddress(String);
+
+impl EmailAddress {
+    fn from_string<S>(email: S) -> Result<EmailAddress, InvalidEmailAddressError> 
+        where S: ToString + AsRef<str>
+    {
+        match (Self::is_valid(&email)) {
+            true => Ok(EmailAddress(email.to_string())),
+            false => Err(InvalidEmailAddressError),
+        }
+    }
+
+    fn is_valid<S>(email: S) -> bool
+        where S: AsRef<str>
+    {
+        let s = email.as_ref();
+        // Must contain an @ that's not the first or last character
+        s.contains('@')
+            && s.chars().next() != Some('@')
+            && s.chars().last() != Some('@')
+    }
+}
+
+fn main() {
+    // Tests
+    let valid_email = EmailAddress::from_string("hello@example.com");
+    let invalid_email = EmailAddress::from_string("Ted");
+
+    assert!(valid_email.is_ok());
+    assert!(invalid_email.is_err());
+
+    assert!(EmailAddress::is_valid("a@b"));
+    assert!(!EmailAddress::is_valid("@ab"));
+    assert!(!EmailAddress::is_valid("ab@"));
+}
+```
+
+We've had to implement an Error type for potentially invalid addresses, and a constructor... but our validator is
+identical. While we've added a lot of code, and more than doubled the length of the test code... none of it is
+particularly complicated.
+
+Now, though, we only ever need to validate the email when we create the data type, which will usually be when we're
+getting that data from an external source, for example from a user or importing it from a database. This will also
+likely be where we deal with any potential validation errors, further simplifying our code.
 
