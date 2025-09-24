@@ -2,7 +2,7 @@
 
 - [Patterns](./patterns.md)
   - [Monads]()
-  - [NewType]()
+  - [NewType](patterns/newtype.md)
   - [RAII - Drop and Finalise]()
   - [Builder]()
   - [Type State / State Machine]()

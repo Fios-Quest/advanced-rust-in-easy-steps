@@ -3,3 +3,10 @@ authors = ["Daniel Mason"]
 language = "en"
 src = "src"
 title = "Advanced Rust In Easy Steps"
+
+[output.html.playground]
+copy-js = true
+editable = true
+line-numbers = true
+
+[output.wordcount]
