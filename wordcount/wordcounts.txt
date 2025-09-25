@@ -1,0 +1,7 @@
+Patterns: 1
+NewType: 1635
+Monads: 0
+RAII - Drop and Finalise: 0
+Builder: 0
+Type State / State Machine: 0
+Total : 1636

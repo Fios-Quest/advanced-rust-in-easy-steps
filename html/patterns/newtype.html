@@ -1,0 +1,639 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>NewType - Advanced Rust In Easy Steps</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Advanced Rust In Easy Steps</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="newtype"><a class="header" href="#newtype">NewType</a></h1>
+<h2 id="what-is-a-type"><a class="header" href="#what-is-a-type">What is a type?</a></h2>
+<p>If I show you this binary value, can you tell me what it is?</p>
+<p><code>01000001 01010010 01101001 01000101 01010011 01000110 01010100 01010111</code></p>
+<p>We can rule out a few things.</p>
+<p>It's 64bits, which means its definitely not a boolean or a character. It's also too long for an IPv4 address, and too
+short for an IPv6 address. More likely it's a number, either a 64bit float <code>4826389.301167569123208522796630859375</code> or
+a 64-bit integer <code>4706940307026367575</code>.</p>
+<p>Or, if we run this code:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use std::error::Error;
+</span><span class="boring">
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn Error&gt;&gt; {
+</span>let bytes = vec![
+    0b01000001, 
+    0b01010010, 
+    0b01101001, 
+    0b01000101, 
+    0b01010011, 
+    0b01000110, 
+    0b01010100, 
+    0b01010111,
+];
+
+let what_is_this_number = String::from_utf8(bytes)?;
+println!("{what_is_this_number}");
+<span class="boring">
+</span><span class="boring">assert_eq!(what_is_this_number, String::from("ARiESFTW"));
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>It's an advert for this book!</p>
+<p>Types turn data into information. Without knowing whether we're looking at a number or a sequence of ascii characters,
+we'd have a really hard time writing code and, more importantly, what we write would be very error-prone.</p>
+<p>Without type information, there's nothing stopping us from accidentally passing a boolean to a function that expects
+a complex user structure. We start having to depend constantly on runtime checks to make sure the data our functions
+receive is valid before trying to process it.</p>
+<p>All modern languages (even ones we may not usually think of being "typed") come with their own built-in types that
+usually cover at the very least, floats, strings, lists and objects (or dictionaries). This helps us reason about the
+data stored in memory.</p>
+<blockquote>
+<p>You'll notice I didn't include integers in the bare minimum types, this is because some languages opt to store <em>all</em>
+numbers as double precision floating points.</p>
+</blockquote>
+<p>But is it enough to consider <code>"hello@example.com"</code> to be a string? It technically is a string, sure, and we could
+manipulate it as one, but, in the context of our software, it might be that there is a meaningful difference between
+<code>"hello@example.com"</code> and <code>"Hello, example.com"</code>, in the same way as there is a meaningful difference between
+<code>4706940307026367575</code> and <code>"ARiESFTW"</code>.</p>
+<h2 id="what-is-a-newtype"><a class="header" href="#what-is-a-newtype">What is a newtype?</a></h2>
+<p>A newtype (or new type), isn't just a type that we create, but it's specifically a type that conveys more meaning around
+another type.</p>
+<p>For example, if we wanted to represent years, months and days, we could do so with <code>u64</code>s:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">fn main() {
+</span>// Todays date as of writing:
+let year: u64 = 2025;
+let month: u64 = 9;
+let day: u64 = 24;
+<span class="boring">}</span></code></pre></pre>
+<p>However, we can immediately identify some problems with this.</p>
+<p>First, there's nothing stopping us from using valid <code>u64</code>s to represent invalid data:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">fn main() {
+</span>let year: u64 = 22025;
+let month: u64 = 19;
+let day: u64 = 2400;
+<span class="boring">}</span></code></pre></pre>
+<p>Second, there's nothing stopping us passing even a valid day to a function that's supposed to take a month:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">fn main() {
+</span>fn get_english_month_name(month: u64) -&gt; String {
+    // ...
+<span class="boring">    match month  {
+</span><span class="boring">        1 =&gt; "January".to_string(),
+</span><span class="boring">        2 =&gt; "February".to_string(),
+</span><span class="boring">        3 =&gt; "March".to_string(),
+</span><span class="boring">        4 =&gt; "April".to_string(),
+</span><span class="boring">        5 =&gt; "May".to_string(),
+</span><span class="boring">        6 =&gt; "June".to_string(),
+</span><span class="boring">        7 =&gt; "July".to_string(),
+</span><span class="boring">        8 =&gt; "August".to_string(),
+</span><span class="boring">        9 =&gt; "September".to_string(),
+</span><span class="boring">        10 =&gt; "October".to_string(),
+</span><span class="boring">        11 =&gt; "November".to_string(),
+</span><span class="boring">        12 =&gt; "December".to_string(),
+</span><span class="boring">        _ =&gt; "Invalid Month".to_string(),
+</span><span class="boring">    }
+</span>}
+
+<span class="boring">let year: u64 = 2025;
+</span><span class="boring">let month: u64 = 9;
+</span><span class="boring">let day: u64 = 24;
+</span><span class="boring">
+</span>println!("{}", get_english_month_name(month));
+println!("{}", get_english_month_name(day));
+<span class="boring">assert_eq!(get_english_month_name(month), "September".to_string());
+</span><span class="boring">assert_eq!(get_english_month_name(day), "Invalid Month".to_string());
+</span><span class="boring">}</span></code></pre></pre>
+<p>We need more context about the data. We need to know what "type" of data we're dealing with beyond it just being a
+number!</p>
+<p>This is what <code>newtype</code> is for. First, lets prevent days being passed into functions that take months.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">fn main() {
+</span><span class="boring">#[derive(Copy, Clone)]
+</span>struct Year(u64);
+<span class="boring">#[derive(Copy, Clone)]
+</span>struct Month(u64);
+<span class="boring">#[derive(Copy, Clone)]
+</span>struct Day(u64);
+
+let year = Year(2025);
+let month = Month(9);
+let day = Day(24);
+
+fn get_english_month_name(month: Month) -&gt; String {
+    // ...
+<span class="boring">    match month.0  {
+</span><span class="boring">        1 =&gt; "January".to_string(),
+</span><span class="boring">        2 =&gt; "February".to_string(),
+</span><span class="boring">        3 =&gt; "March".to_string(),
+</span><span class="boring">        4 =&gt; "April".to_string(),
+</span><span class="boring">        5 =&gt; "May".to_string(),
+</span><span class="boring">        6 =&gt; "June".to_string(),
+</span><span class="boring">        7 =&gt; "July".to_string(),
+</span><span class="boring">        8 =&gt; "August".to_string(),
+</span><span class="boring">        9 =&gt; "September".to_string(),
+</span><span class="boring">        10 =&gt; "October".to_string(),
+</span><span class="boring">        11 =&gt; "November".to_string(),
+</span><span class="boring">        12 =&gt; "December".to_string(),
+</span><span class="boring">        _ =&gt; "Invalid Month".to_string(),
+</span><span class="boring">    }
+</span>}
+
+// This will work
+println!("{}", get_english_month_name(month));
+<span class="boring">assert_eq!(get_english_month_name(month), "September".to_string());
+</span>
+// This won't compile, but gives a useful error message!
+// println!("{}", get_english_month_name(day));
+<span class="boring">}</span></code></pre></pre>
+<p>If you try compiling the code with the last line uncommented, you get a wonderful error message:</p>
+<pre><code class="language-text">  --&gt; patterns/new-types.md:165:39
+   |
+38 | println!("{}", get_english_month_name(day));
+   |                ---------------------- ^^^ expected `Month`, found `Day`
+   |                |
+   |                arguments to this function are incorrect
+   |
+</code></pre>
+<p>Our second issue is that we can still produce invalid values such as <code>Month(13)</code>. We can fix this by restricting the
+instantiation of our types and validating the input. The question becomes, what should we do when someone attempts to
+use invalid data, I would argue return a Result with a relevant error. Let's focus on <code>Month</code>.</p>
+<pre><pre class="playground"><code class="language-rust">// First we need to make the interior of the struct private which means moving
+// it into a seperate module
+mod month {
+    pub struct Month(u64);
+
+    pub struct InvalidMonthNumber;
+    
+    impl Month {
+        pub fn from_number(month: u64) -&gt; Result&lt;Month, InvalidMonthNumber&gt; {
+            if month &lt; 1 || month &gt; 12 {
+                Err(InvalidMonthNumber)
+            } else {
+                Ok(Month(month))
+            }
+        }
+    }
+}
+
+use month::Month;
+
+<span class="boring">fn main() {
+</span>let maybe_month = Month::from_number(0);
+assert!(maybe_month.is_err());
+
+let maybe_month = Month::from_number(9);
+assert!(maybe_month.is_ok());
+<span class="boring">}</span></code></pre></pre>
+<p>I'd say there's still one improvement we can make here, at least for months. Our program is written in English so why
+use numbers to represent the months in our code. Furthermore, if we wanted to use the same <code>get_english_month_name</code>
+function, by matching on the numeric value we still have to do <em>something</em> with a number that's not 1-12.</p>
+<p>We can change the code representation of our Month without changing its underlying numeric representation.</p>
+<pre><pre class="playground"><code class="language-rust">// First we need to make the interior of the struct private which means moving
+// it into a seperate module
+mod month {
+<span class="boring">    #[derive(Debug, PartialEq)]
+</span>    #[repr(u64)]
+    pub enum Month {
+        January = 1,
+        February = 2,
+        March = 3,
+        April = 4,
+        May = 5,
+        June = 6,
+        July = 7,
+        August = 8,
+        September = 9,
+        October = 10,
+        November = 11,
+        December = 12,
+    }
+
+<span class="boring">    #[derive(Debug)]
+</span>    pub struct InvalidMonthNumber;
+    
+    impl Month {
+        pub fn from_number(month: u64) -&gt; Result&lt;Month, InvalidMonthNumber&gt; {
+            match month  {
+                1 =&gt; Ok(Month::January),
+                2 =&gt; Ok(Month::February),
+                3 =&gt; Ok(Month::March),
+                4 =&gt; Ok(Month::April),
+                5 =&gt; Ok(Month::May),
+                6 =&gt; Ok(Month::June),
+                7 =&gt; Ok(Month::July),
+                8 =&gt; Ok(Month::August),
+                9 =&gt; Ok(Month::September),
+                10 =&gt; Ok(Month::October),
+                11 =&gt; Ok(Month::November),
+                12 =&gt; Ok(Month::December),
+                _ =&gt; Err(InvalidMonthNumber),
+            }
+        }
+
+        pub fn get_english_month_name(&amp;self) -&gt; String {
+            match self  {
+                Month::January =&gt; "January".to_string(),
+                Month::February =&gt; "February".to_string(),
+                Month::March =&gt; "March".to_string(),
+                Month::April =&gt; "April".to_string(),
+                Month::May =&gt; "May".to_string(),
+                Month::June =&gt; "June".to_string(),
+                Month::July =&gt; "July".to_string(),
+                Month::August =&gt; "August".to_string(),
+                Month::September =&gt; "September".to_string(),
+                Month::October =&gt; "October".to_string(),
+                Month::November =&gt; "November".to_string(),
+                Month::December =&gt; "December".to_string(),
+            }
+        }
+    }
+}
+
+use month::Month;
+
+<span class="boring">fn main() {
+</span>let month = Month::from_number(9).expect("Somehow not September?!");
+assert_eq!(month, Month::September);
+println!("{}", month.get_english_month_name());
+<span class="boring">assert_eq!(month.get_english_month_name(), "September".to_string());
+</span><span class="boring">}</span></code></pre></pre>
+<p>It's worth point out that, in memory, these types are all exactly the same:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[repr(u64)]
+pub enum MonthEnum {
+    // ...snip
+<span class="boring">    January = 1,
+</span><span class="boring">    February = 2,
+</span><span class="boring">    March = 3,
+</span><span class="boring">    April = 4,
+</span><span class="boring">    May = 5,
+</span><span class="boring">    June = 6,
+</span><span class="boring">    July = 7,
+</span><span class="boring">    August = 8,
+</span><span class="boring">    September = 9,
+</span><span class="boring">    October = 10,
+</span><span class="boring">    November = 11,
+</span><span class="boring">    December = 12,
+</span>}
+
+pub struct MonthStruct(u64);
+
+fn get_memory&lt;'a, T&gt;(input: &amp;'a T) -&gt; &amp;'a [u8] {
+    // ...snip
+<span class="boring">    // Credit: https://bennett.dev/rust/dump-struct-bytes/
+</span><span class="boring">    unsafe {
+</span><span class="boring">        std::slice::from_raw_parts(
+</span><span class="boring">            input as *const _ as *const u8,
+</span><span class="boring">            std::mem::size_of::&lt;T&gt;()
+</span><span class="boring">        )
+</span><span class="boring">    }
+</span>}
+
+
+let sept_num: u64 = 9;
+let sept_struct = MonthStruct(9);
+let sept_enum = MonthEnum::September;
+
+let num_bytes = get_memory(&amp;sept_num);
+let struct_bytes = get_memory(&amp;sept_struct);
+let enum_bytes = get_memory(&amp;sept_enum);
+
+println!("Num bytes: {num_bytes:?}");
+println!("Struct bytes: {struct_bytes:?}");
+println!("Enum bytes: {enum_bytes:?}");
+<span class="boring">
+</span><span class="boring">assert_eq!(num_bytes, struct_bytes);
+</span><span class="boring">assert_eq!(struct_bytes, enum_bytes);
+</span><span class="boring">}</span></code></pre></pre>
+<h2 id="tradeoffs"><a class="header" href="#tradeoffs">Tradeoffs</a></h2>
+<p>There seems to be a lot of extra work going on here. We need to add more validation, extra error types (and all the
+extra work they're supposed to involve that we skipped here), not to mention how verbose the match statements were for
+the enum version of our month newtype.</p>
+<p>That's true.</p>
+<p>But, you could say the same about writing tests. Often times your unit tests alone will be 2-3x the length of your
+non-test code, let alone anything you write for integration testing, end to end testing, etc.</p>
+<p>With unit testing we accept that:</p>
+<ol>
+<li>Writing your tests first (or as early as possible) helps you reason about your code</li>
+<li>They make sure silly mistakes don't slip through, costing us a lot more time later</li>
+<li>Test code tends to be quite routine, you don't need to think too hard about them and there are few surprises</li>
+</ol>
+<p>I'd argue this is all true of newtype code too.</p>
+<ol>
+<li>newtypes help you reason about your data structures in meaningful ways to the problem domain</li>
+<li>They add layers of protection to stop silly mistakes costing a lot of time later</li>
+<li>Once you're used to them, they become routine, they need little thought and there are few surprises</li>
+</ol>
+<p>You might point out that the extra newtype code also needs testing which, as I just said, could easily be 2-3x the
+length of the code being tested, however, I'd ask you to think about what you're testing.</p>
+<p>Let's think about a more complex type, like an email. Using built in types, we just create a validator and call it done:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn is_valid_email_address&lt;S&gt;(email: S) -&gt; bool
+    where S: AsRef&lt;str&gt;
+{
+    let s = email.as_ref();
+    // Must contain an @ that's not the first or last character
+    s.contains('@')
+        &amp;&amp; s.chars().next() != Some('@')
+        &amp;&amp; s.chars().last() != Some('@')
+}
+
+// Tests
+assert!(is_valid_email_address("a@b"));
+assert!(!is_valid_email_address("@ab"));
+assert!(!is_valid_email_address("ab@"));
+<span class="boring">}</span></code></pre></pre>
+<p>This code is simple and terse, and doesn't require much testing. However, everytime we want to use a string as an email,
+we will need to run the validator. This not only could risk the same email needing to be validated multiple times, but
+adds some significant risk, particularly as our code evolves. Any time we <em>don't</em> use the validator for a function that
+accepts an email string because we perhaps initially create it only in a context where the string has already been
+validated, we risk that function being reused with no validation later.</p>
+<blockquote>
+<p>It's worth noting,  we're using my "good enough, no false negatives" approach rather than a complex regex or parser,
+which would be even more computationally expensive! See https://emailregex.com/ for a completely compliant regex
+validation string but... if you really want to know if an email address is valid... email it.</p>
+</blockquote>
+<p>Here's a newtype representing an Email:</p>
+<pre><pre class="playground"><code class="language-rust">use std::fmt;
+use std::error::Error;
+
+#[derive(Debug)]
+struct InvalidEmailAddressError;
+
+impl fmt::Display for InvalidEmailAddressError {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter&lt;'_&gt;) -&gt; fmt::Result {
+        write!(f, "Invalid Email Address")
+    }      
+}
+
+impl Error for InvalidEmailAddressError {}
+
+struct EmailAddress(String);
+
+impl EmailAddress {
+    fn from_string&lt;S&gt;(email: S) -&gt; Result&lt;EmailAddress, InvalidEmailAddressError&gt; 
+        where S: ToString + AsRef&lt;str&gt;
+    {
+        match (Self::is_valid(&amp;email)) {
+            true =&gt; Ok(EmailAddress(email.to_string())),
+            false =&gt; Err(InvalidEmailAddressError),
+        }
+    }
+
+    fn is_valid&lt;S&gt;(email: S) -&gt; bool
+        where S: AsRef&lt;str&gt;
+    {
+        let s = email.as_ref();
+        // Must contain an @ that's not the first or last character
+        s.contains('@')
+            &amp;&amp; s.chars().next() != Some('@')
+            &amp;&amp; s.chars().last() != Some('@')
+    }
+}
+
+fn main() {
+    // Tests
+    let valid_email = EmailAddress::from_string("hello@example.com");
+    let invalid_email = EmailAddress::from_string("Ted");
+
+    assert!(valid_email.is_ok());
+    assert!(invalid_email.is_err());
+
+    assert!(EmailAddress::is_valid("a@b"));
+    assert!(!EmailAddress::is_valid("@ab"));
+    assert!(!EmailAddress::is_valid("ab@"));
+}</code></pre></pre>
+<p>We've had to implement an Error type for potentially invalid addresses, and a constructor... but our validator is
+identical. While we've added a lot of code, and more than doubled the length of the test code... none of it is
+particularly complicated.</p>
+<p>Now, though, we only ever need to validate the email when we create the data type, which will usually be when we're
+getting that data from an external source, for example from a user or importing it from a database. This will also
+likely be where we deal with any potential validation errors, further simplifying our code.</p>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>For a small amount of extra work, newtypes give us:</p>
+<ul>
+<li>Centralised validation and error handling</li>
+<li>Reduced complexity</li>
+<li>More defensive code</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../patterns.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../patterns.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+        <script>
+            window.playground_line_numbers = true;
+        </script>
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+        <script src="../ace.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
