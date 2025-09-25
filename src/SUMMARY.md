@@ -1,8 +1,8 @@
 # Summary
 
 - [Patterns](./patterns.md)
+  - [NewType](patterns/newtype.md)
   - [Monads]()
-  - [NewType]()
   - [RAII - Drop and Finalise]()
   - [Builder]()
   - [Type State / State Machine]()
