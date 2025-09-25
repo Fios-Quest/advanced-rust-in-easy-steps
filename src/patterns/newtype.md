@@ -456,3 +456,12 @@ Now, though, we only ever need to validate the email when we create the data typ
 getting that data from an external source, for example from a user or importing it from a database. This will also
 likely be where we deal with any potential validation errors, further simplifying our code.
 
+Conclusion
+----------
+
+For a small amount of extra work, newtypes give us:
+
+- Centralised validation and error handling
+- Reduced complexity
+- More defensive code
+
