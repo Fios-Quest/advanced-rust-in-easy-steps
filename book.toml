@@ -1,12 +1,23 @@
 [book]
+title = "Advanced Rust In Easy Steps"
+description = "Even more Rust idioms, patterns and useful tools"
 authors = ["Daniel Mason"]
 language = "en"
+multilingual = false
 src = "src"
-title = "Advanced Rust In Easy Steps"
+
+[build]
+build-dir = "docs"
+create-missing = true
+
+[preprocessor.external-links]
 
 [output.html.playground]
 copy-js = true
 editable = true
 line-numbers = true
 
-[output.wordcount]
+#[output.wordcount]
+
+[rust]
+edition = "2024"
