@@ -19,8 +19,6 @@ jobs:
       - name: Add mdBook extensions
         run: |
           cargo install mdbook-external-links
-          cargo install mdbook-mermaid
-          cargo install mdbook-wordcount
 
       - name: Test
         run: mdbook test

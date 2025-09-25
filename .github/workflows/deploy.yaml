@@ -23,8 +23,6 @@ jobs:
       - name: Add mdBook extensions
         run: |
           cargo install mdbook-external-links
-          cargo install mdbook-mermaid
-          cargo install mdbook-wordcount
 
       - name: Test
         run: mdbook test
@@ -36,4 +34,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./book
+          publish_dir: ./docs
