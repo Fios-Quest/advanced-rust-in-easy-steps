@@ -41,14 +41,14 @@ struct User {
 ```
 
 There are arguably two versions of this pattern, a simpler version that will work in just about any language that I'm
-going to refer to as "Builder Lite", and a more complex version that only works in languages with robust type systems 
-that I'm going to refer to as the "Typed Builder". Each has their own pros and cons, and we'll go over those too.
+going to refer to as "Builder Lite", and a more complex version that only works in languages, the 
+"[Typestate](./typestate.md) Builder". Each has their own pros and cons, and we'll go over those too.
 
 Builder Lite
 ------------
 
 The traditional builder pattern uses a type that mirrors the type you want to build but everything is optional. We
-use methods to update each field, and then have a finaliser that takes the data we've stored in the builder and attempts
+use methods to update each field, and then have a finalizer that takes the data we've stored in the builder and attempts
 to convert it into the target type.
 
 For our `User` example that might look like this.
@@ -158,17 +158,34 @@ fn main () {
 }
 ```
 
-Typed Builder
--------------
+Typestate Builder
+-----------------
 
-In the previous example we need to deal with calling `.build()` on a builder that may not have all of the required
-information. To manage this potentail problem we return a result. What if I told you, we can write this code in such
+In the previous example we need to deal with calling `.build()` on a builder that may not have all the required
+information. To manage this potential problem we return a result. What if I told you, we can write this code in such
 a way as to be sure that the `.build()` method can only be used once we can guarantee we have everything we need, thus
 negating the Result requirement.
 
-We can use generics to mark whether we've received required data or not, the only slight trick is that generic types
-must be used. This is where `PhantomData` comes in. It's a zero-sized marker that "uses" the types in generics, allowing
-you to use generics as nothing more than a compile time marker.
+This is an advanced application of the [Typestate](./typestate.md) pattern. Instead of migrating between concrete
+types representing individual states, we can use generics as markers on top of which we can implement different methods
+
+The only slight trick is that generic types must be "used" _in_ our type. For example, the following won't compile 
+because we didn't use "T" in the struct itself, even though our instantiation uses a Unit Struct:
+
+```rust,compile_fail
+struct BadExample<T> {
+    data: String,
+}
+
+struct Marker;
+
+# fn main() {
+let example = BadExample::<Marker> { data: "This won't work".to_string() };
+# }
+```
+
+This is where `PhantomData` comes in. It's a zero-sized marker that "uses" the types in generics, allowing you to use
+generics as nothing more than a compile time marker.
 
 Let's build our builder again using this method.
 
@@ -311,8 +328,8 @@ fn main () {
 }
 ```
 
-Using the typed builder we prevent `.build()` being called unless all required data has been set. Rather than runtime
-validation, we get compile time valiation!
+Using the typestate builder we prevent `.build()` being called unless all required data has been set. Rather than
+runtime validation, we get compile time validation!
  
 
 Pro's and Con's
@@ -321,9 +338,9 @@ Pro's and Con's
 I don't think there's one "right" builder to use.
 
 Having compile time validation that you've used the builder correctly is nice, but it adds a lot of complexity through
-the type system, and you can argubly be sure you've used the builder correctly through tests. But using the non-typed
+the type system, and you can arguably be sure you've used the builder correctly through tests. But using the lite
 builder adds more complexity to your tests and error handling code.
 
-Its also worth noting that the typed builder won't work if you can't guarantee each method is called at runtime. Methods
-that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if) you
-can't reconsile the types later.
+Its also worth noting that the typestate builder won't work if you can't guarantee each method is called at runtime. 
+Methods that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if)
+you can't reconcile the types later.
