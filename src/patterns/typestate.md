@@ -3,9 +3,9 @@ Typestate
 
 The typestate pattern encodes state into type information.
 
-Let's imagine we want to represent a Pull Request. The request might be opened immediatey ready for review, or opened
-as a draft, moving to ready for review later. Once ready for review, the PR needs to recieve one or more approvals after
-which it can be merged. If after being made ready for review, the PR recieves a rejection, the PR is considered to be
+Let's imagine we want to represent a Pull Request. The request might be opened immediately ready for review, or opened
+as a draft, moving to ready for review later. Once ready for review, the PR needs to receive one or more approvals after
+which it can be merged. If after being made ready for review, the PR receives a rejection, the PR is considered to be
 Rejected, even if it's previously been approved.
 
 This is a simplified model but is complex enough to show the benefits of TypeState.
@@ -81,7 +81,7 @@ assert!(pr.approve().is_err());
 We can conceptually understand that a PR has a state, but this then adds complexity to our logic when we want to change
 that state if there are rules around how it can change.
 
-If instead we understand a PRs as being in different states, this can reduces the logical complexity.
+If instead we understand a PRs as being in different states, this can reduce the logical complexity.
 
 
 ```rust
@@ -120,7 +120,7 @@ let ready_pr = PullRequestReadyForReview { };
 let approved_pr = ready_pr.approve();
 let still_approved = approved_pr.approve();
 
-// The approve method doesn't exist for rejected PRs, commented line won't compile
+// The `.approve()` method doesn't exist for rejected PRs, commented line won't compile
 let rejected_pr = PullRequestRejected { };
 // rejected_pr.approve();
 # }
@@ -129,10 +129,10 @@ let rejected_pr = PullRequestRejected { };
 Pros and Cons
 -------------
 
-Utiliing the typestate pattern requires writing a lot more code _but_ that code has less branches, less (or in this case
-no) potential error states, and everything is logically subdivided making maintaining the code much more trivial.
+Utilising the typestate pattern requires writing a lot more code _but_ that code has fewer branches, fewer (or in this 
+case no) potential error states, and everything is logically subdivided making maintaining the code more trivial.
 
-In the example we've given here, we consume the type each time we change state. Generally in Rust its better to pass
+In the example we've given here, we consume the type each time we change state. Generally in Rust it's better to pass
 references rather than ownership, but in the case of transitioning state we want to return a new type. Often the old
 type will contain owned data that needs to be moved to the new type, and we'll rarely want to keep the old state around
 but your needs may differ.
