@@ -214,11 +214,11 @@ required and some of it is not.</p>
 }
 <span class="boring">}</span></code></pre></pre>
 <p>There are arguably two versions of this pattern, a simpler version that will work in just about any language that I’m
-going to refer to as “Builder Lite”, and a more complex version that only works in languages with robust type systems
-that I’m going to refer to as the “Typed Builder”. Each has their own pros and cons, and we’ll go over those too.</p>
+going to refer to as “Builder Lite”, and a more complex version that only works in languages, the
+“<a href="./typestate.html">Typestate</a> Builder”. Each has their own pros and cons, and we’ll go over those too.</p>
 <h2 id="builder-lite"><a class="header" href="#builder-lite">Builder Lite</a></h2>
 <p>The traditional builder pattern uses a type that mirrors the type you want to build but everything is optional. We
-use methods to update each field, and then have a finaliser that takes the data we’ve stored in the builder and attempts
+use methods to update each field, and then have a finalizer that takes the data we’ve stored in the builder and attempts
 to convert it into the target type.</p>
 <p>For our <code>User</code> example that might look like this.</p>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::error::Error;
@@ -322,14 +322,26 @@ fn main () {
         .build();
     assert!(user_result.is_err());
 }</code></pre></pre>
-<h2 id="typed-builder"><a class="header" href="#typed-builder">Typed Builder</a></h2>
-<p>In the previous example we need to deal with calling <code>.build()</code> on a builder that may not have all of the required
-information. To manage this potentail problem we return a result. What if I told you, we can write this code in such
+<h2 id="typestate-builder"><a class="header" href="#typestate-builder">Typestate Builder</a></h2>
+<p>In the previous example we need to deal with calling <code>.build()</code> on a builder that may not have all the required
+information. To manage this potential problem we return a result. What if I told you, we can write this code in such
 a way as to be sure that the <code>.build()</code> method can only be used once we can guarantee we have everything we need, thus
 negating the Result requirement.</p>
-<p>We can use generics to mark whether we’ve received required data or not, the only slight trick is that generic types
-must be used. This is where <code>PhantomData</code> comes in. It’s a zero-sized marker that “uses” the types in generics, allowing
-you to use generics as nothing more than a compile time marker.</p>
+<p>This is an advanced application of the <a href="./typestate.html">Typestate</a> pattern. Instead of migrating between concrete
+types representing individual states, we can use generics as markers on top of which we can implement different methods</p>
+<p>The only slight trick is that generic types must be “used” <em>in</em> our type. For example, the following won’t compile
+because we didn’t use “T” in the struct itself, even though our instantiation uses a Unit Struct:</p>
+<pre><pre class="playground"><code class="language-rust compile_fail edition2024">struct BadExample&lt;T&gt; {
+    data: String,
+}
+
+struct Marker;
+
+<span class="boring">fn main() {
+</span>let example = BadExample::&lt;Marker&gt; { data: "This won't work".to_string() };
+<span class="boring">}</span></code></pre></pre>
+<p>This is where <code>PhantomData</code> comes in. It’s a zero-sized marker that “uses” the types in generics, allowing you to use
+generics as nothing more than a compile time marker.</p>
 <p>Let’s build our builder again using this method.</p>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::error::Error;
 use std::collections::HashSet;
@@ -467,22 +479,22 @@ fn main () {
     //     .set_username(Username::from("Fio"))
     //     .build();
 }</code></pre></pre>
-<p>Using the typed builder we prevent <code>.build()</code> being called unless all required data has been set. Rather than runtime
-validation, we get compile time valiation!</p>
+<p>Using the typestate builder we prevent <code>.build()</code> being called unless all required data has been set. Rather than
+runtime validation, we get compile time validation!</p>
 <h2 id="pros-and-cons"><a class="header" href="#pros-and-cons">Pro’s and Con’s</a></h2>
 <p>I don’t think there’s one “right” builder to use.</p>
 <p>Having compile time validation that you’ve used the builder correctly is nice, but it adds a lot of complexity through
-the type system, and you can argubly be sure you’ve used the builder correctly through tests. But using the non-typed
+the type system, and you can arguably be sure you’ve used the builder correctly through tests. But using the lite
 builder adds more complexity to your tests and error handling code.</p>
-<p>Its also worth noting that the typed builder won’t work if you can’t guarantee each method is called at runtime. Methods
-that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if) you
-can’t reconsile the types later.</p>
+<p>Its also worth noting that the typestate builder won’t work if you can’t guarantee each method is called at runtime.
+Methods that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if)
+you can’t reconcile the types later.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../patterns/newtype.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../patterns/typestate.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -493,7 +505,7 @@ can’t reconsile the types later.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../patterns/newtype.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../patterns/typestate.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
@@ -526,6 +538,8 @@ can’t reconsile the types later.</p>
         <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="../mermaid.min.js"></script>
+        <script src="../mermaid-init.js"></script>
 
 
 

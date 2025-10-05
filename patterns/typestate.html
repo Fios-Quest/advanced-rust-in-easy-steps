@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Patterns - Advanced Rust In Easy Steps</title>
+        <title>TypeState - Advanced Rust In Easy Steps</title>
 
 
         <!-- Custom HTML head -->
@@ -12,34 +12,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex.js";
+            window.path_to_searchindex_js = "../searchindex.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +106,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +141,7 @@
                     <h1 class="menu-title">Advanced Rust In Easy Steps</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -175,14 +175,133 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="patterns"><a class="header" href="#patterns">Patterns</a></h1>
+                        <h1 id="typestate"><a class="header" href="#typestate">Typestate</a></h1>
+<p>The typestate pattern encodes state into type information.</p>
+<p>Let’s imagine we want to represent a Pull Request. The request might be opened immediately ready for review, or opened
+as a draft, moving to ready for review later. Once ready for review, the PR needs to receive one or more approvals after
+which it can be merged. If after being made ready for review, the PR receives a rejection, the PR is considered to be
+Rejected, even if it’s previously been approved.</p>
+<p>This is a simplified model but is complex enough to show the benefits of TypeState.</p>
+<pre><code class="language-mermaid">flowchart
+    Start([Open])
+    A[Draft PR]
+    B[Ready for Review]
+    C[Approved]
+    D[Rejected]
+    E[Merged]
+    End([Close])
+
+    Start --&gt; A
+    Start --&gt; B
+    A -- Mark as Ready --&gt; B
+    B -- Approve --&gt; C
+    C -- Approve --&gt; C
+    C -- Reject --&gt; D
+    B -- Reject --&gt; D
+    C -- Merge --&gt; E
+    D --&gt; End
+    E --&gt; End
+</code></pre>
+<p>Let’s try to model one small part of this flow in a traditional way, the “approve” action.</p>
+<p>First lets model it with a PullRequest type that <em>has</em> a status. A PR can be approved if the status is ReadyForReview or
+Approved. If the status was not one of those, then we’ll need to return an error to say that the status could not be
+changed.</p>
+<pre><pre class="playground"><code class="language-rust edition2024">struct InvalidStateError;
+
+#[derive(PartialEq)]
+enum Status {
+    Draft,
+    ReadyForReview,
+    Approved,
+    Rejected,
+    Merged
+}
+
+struct PullRequest {
+    status: Status,
+    // ...other PR details ...
+}
+
+impl PullRequest {
+    fn approve(&amp;mut self) -&gt; Result&lt;(), InvalidStateError&gt; {
+        if self.status == Status::ReadyForReview || self.status == Status::Approved {
+            self.status = Status::Approved;
+            Ok(())
+        } else {
+            Err(InvalidStateError)
+        }
+    }
+}
+<span class="boring">
+</span><span class="boring">fn main () {
+</span>// You can approve a PR with Ready for Review or already Approved
+let mut pr = PullRequest { status: Status::ReadyForReview };
+assert!(pr.approve().is_ok());
+assert!(pr.approve().is_ok());
+
+// You can not approve a rejected PR, but you need to handle the error
+pr.status = Status::Rejected;
+assert!(pr.approve().is_err());
+<span class="boring">}</span></code></pre></pre>
+<p>We can conceptually understand that a PR has a state, but this then adds complexity to our logic when we want to change
+that state if there are rules around how it can change.</p>
+<p>If instead we understand a PRs as being in different states, this can reduce the logical complexity.</p>
+<pre><pre class="playground"><code class="language-rust edition2024">struct PullRequestReadyForReview {
+    // ...other PR details ...
+}
+
+struct PullRequestApproved {
+    // ...other PR details ...
+}
+
+struct PullRequestRejected {
+    // ...other PR details ...
+}
+
+
+impl PullRequestReadyForReview {
+    fn approve(self) -&gt; PullRequestApproved {
+        PullRequestApproved {
+            // ... move self into PullRequestApproved ...
+        }
+    }
+}
+
+impl PullRequestApproved {
+    fn approve(self) -&gt; PullRequestApproved {
+        self
+    }
+}
+
+
+<span class="boring">
+</span><span class="boring">fn main () {
+</span>// You can approve a PR with Ready for Review or already Approved
+let ready_pr = PullRequestReadyForReview { };
+let approved_pr = ready_pr.approve();
+let still_approved = approved_pr.approve();
+
+// The `.approve()` method doesn't exist for rejected PRs, commented line won't compile
+let rejected_pr = PullRequestRejected { };
+// rejected_pr.approve();
+<span class="boring">}</span></code></pre></pre>
+<h2 id="pros-and-cons"><a class="header" href="#pros-and-cons">Pros and Cons</a></h2>
+<p>Utilising the typestate pattern requires writing a lot more code <em>but</em> that code has fewer branches, fewer (or in this
+case no) potential error states, and everything is logically subdivided making maintaining the code more trivial.</p>
+<p>In the example we’ve given here, we consume the type each time we change state. Generally in Rust it’s better to pass
+references rather than ownership, but in the case of transitioning state we want to return a new type. Often the old
+type will contain owned data that needs to be moved to the new type, and we’ll rarely want to keep the old state around
+but your needs may differ.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../patterns/newtype.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
-                            <a rel="next prefetch" href="patterns/newtype.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../patterns/builder.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -192,8 +311,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../patterns/newtype.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
-                    <a rel="next prefetch" href="patterns/newtype.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../patterns/builder.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -210,23 +332,23 @@
             window.playground_copyable = true;
         </script>
 
-        <script src="ace.js"></script>
-        <script src="mode-rust.js"></script>
-        <script src="editor.js"></script>
-        <script src="theme-dawn.js"></script>
-        <script src="theme-tomorrow_night.js"></script>
+        <script src="../ace.js"></script>
+        <script src="../mode-rust.js"></script>
+        <script src="../editor.js"></script>
+        <script src="../theme-dawn.js"></script>
+        <script src="../theme-tomorrow_night.js"></script>
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid.min.js"></script>
-        <script src="mermaid-init.js"></script>
+        <script src="../mermaid.min.js"></script>
+        <script src="../mermaid-init.js"></script>
 
 
 
