@@ -45,7 +45,7 @@ Types turn data into information. Without knowing whether we're looking at a num
  we'd have a really hard time writing code and, more importantly, what we write would be very error-prone.
 
 Without type information, there's nothing stopping us from accidentally passing a boolean to a function that expects
-a complex user structure. We start having to depend constantly on runtime checks to make sure the data our functions
+a complex user structure. We start having to depend constantly on runtime checks to make sure any data our functions
 receive is valid before trying to process it.
 
 All modern languages (even ones we may not usually think of being "typed") come with their own built-in types that
@@ -63,8 +63,8 @@ manipulate it as one, but, in the context of our software, it might be that ther
 What is a newtype?
 ------------------
 
-A newtype (or new type), isn't just a type that we create, but it's specifically a type that conveys more meaning around
-another type.
+A newtype (or new type, or in other languages, a value object), isn't just a type that we create, but it's specifically
+a type that conveys more meaning around another type.
 
 For example, if we wanted to represent years, months and days, we could do so with `u64`s:
 
@@ -167,9 +167,10 @@ println!("{}", get_english_month_name(month));
 // println!("{}", get_english_month_name(day));
 # }
 ```
+
 If you try compiling the code with the last line uncommented, you get a wonderful error message:
+
 ```text
-  --> patterns/new-types.md:165:39
    |
 38 | println!("{}", get_english_month_name(day));
    |                ---------------------- ^^^ expected `Month`, found `Day`
@@ -179,12 +180,14 @@ If you try compiling the code with the last line uncommented, you get a wonderfu
 ```
 
 Our second issue is that we can still produce invalid values such as `Month(13)`. We can fix this by restricting the
-instantiation of our types and validating the input. The question becomes, what should we do when someone attempts to
-use invalid data, I would argue return a Result with a relevant error. Let's focus on `Month`.
+instantiation of our types to a constructor, and validating the input. The question becomes, what should we do when
+someone attempts to use invalid data, I would argue we should return a Result with a relevant error. 
+
+Let's focus on `Month`.
 
 ```rust
 // First we need to make the interior of the struct private which means moving
-// it into a seperate module
+// it into a separate module
 mod month {
     pub struct Month(u64);
 
@@ -220,7 +223,7 @@ We can change the code representation of our Month without changing its underlyi
 
 ```rust
 // First we need to make the interior of the struct private which means moving
-// it into a seperate module
+// it into a separate module
 mod month {
 #     #[derive(Debug, PartialEq)]
     #[repr(u64)]
