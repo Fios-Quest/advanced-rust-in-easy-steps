@@ -41,8 +41,8 @@ struct User {
 ```
 
 There are arguably two versions of this pattern, a simpler version that will work in just about any language that I'm
-going to refer to as "Builder Lite", and a more complex version that only works in languages, the 
-"[Typestate](./typestate.md) Builder". Each has their own pros and cons, and we'll go over those too.
+going to refer to as "Builder Lite", and a more complex version that only works in languages with strict generic typing,
+the "[Typestate](./typestate.md) Builder". Each has their own pros and cons, and we'll go over those too.
 
 Builder Lite
 ------------
@@ -187,6 +187,24 @@ let example = BadExample::<Marker> { data: "This won't work".to_string() };
 This is where `PhantomData` comes in. It's a zero-sized marker that "uses" the types in generics, allowing you to use
 generics as nothing more than a compile time marker.
 
+```rust
+use std::marker::PhantomData;
+
+struct GoodExample<T> {
+    data: String,
+    marker_for_t: PhantomData<T>,
+}
+
+struct Marker;
+
+# fn main() {
+let example = GoodExample::<Marker> {
+    data: "This will work!".to_string(),
+    marker_for_t: PhantomData,
+};
+# }
+```
+
 Let's build our builder again using this method.
 
 ```rust
@@ -330,7 +348,6 @@ fn main () {
 
 Using the typestate builder we prevent `.build()` being called unless all required data has been set. Rather than
 runtime validation, we get compile time validation!
- 
 
 Pro's and Con's
 ---------------
@@ -342,5 +359,5 @@ the type system, and you can arguably be sure you've used the builder correctly 
 builder adds more complexity to your tests and error handling code.
 
 Its also worth noting that the typestate builder won't work if you can't guarantee each method is called at runtime. 
-Methods that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if)
-you can't reconcile the types later.
+Methods that set a required parameter change the type of the builder, meaning you can't put a call in a branch (such as
+an if) because you can't reconcile the types later.
