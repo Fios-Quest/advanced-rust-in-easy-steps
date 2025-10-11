@@ -60,8 +60,8 @@ manipulate it as one, but, in the context of our software, it might be that ther
 `"hello@example.com"` and `"Hello, example.com"`, in the same way as there is a meaningful difference between 
 `4706940307026367575` and `"ARiESFTW"`.
 
-What is a newtype?
-------------------
+What's wrong with normal types?
+-------------------------------
 
 A newtype (or new type, or in other languages, a value object), isn't just a type that we create, but it's specifically
 a type that conveys more meaning around another type.
@@ -122,10 +122,19 @@ println!("{}", get_english_month_name(day));
 # }
 ```
 
-We need more context about the data. We need to know what "type" of data we're dealing with beyond it just being a
-number!
+We need more context about the data. We need to know more about the "type" of data we're dealing with beyond it just
+being a number!
 
-This is what `newtype` is for. First, lets prevent days being passed into functions that take months.
+This is what the `newtype` pattern is for.
+
+Introducing newtype
+-------------------
+
+First, lets prevent days being passed into functions that take months. We could do this by wrapping our `u64`s in tuple
+structs, one for each of Year, Month and Day.
+
+We can then modify our function that expect something that _is_ a month to take the `Month` type. This is immediately
+more informative to anyone reading your code.
 
 ```rust
 # fn main() {
@@ -181,7 +190,7 @@ If you try compiling the code with the last line uncommented, you get a wonderfu
 
 Our second issue is that we can still produce invalid values such as `Month(13)`. We can fix this by restricting the
 instantiation of our types to a constructor, and validating the input. The question becomes, what should we do when
-someone attempts to use invalid data, I would argue we should return a Result with a relevant error. 
+someone attempts to use invalid data, I would argue we should return a Result with a relevant error.
 
 Let's focus on `Month`.
 
@@ -293,7 +302,8 @@ println!("{}", month.get_english_month_name());
 # }
 ```
 
-It's worth point out that, in memory, these types are all exactly the same:
+It's worth point out that, these types only exist at compile time. In memory, in our running program, these types are
+all exactly the same:
 
 ```rust
 #[repr(u64)]
@@ -343,8 +353,8 @@ println!("Enum bytes: {enum_bytes:?}");
 # assert_eq!(struct_bytes, enum_bytes);
 ```
 
-Tradeoffs
----------
+Tradeoffs?
+----------
 
 There seems to be a lot of extra work going on here. We need to add more validation, extra error types (and all the
 extra work they're supposed to involve that we skipped here), not to mention how verbose the match statements were for
@@ -352,21 +362,9 @@ the enum version of our month newtype.
 
 That's true.
 
-But, you could say the same about writing tests. Often times your unit tests alone will be 2-3x the length of your
-non-test code, let alone anything you write for integration testing, end to end testing, etc.
+But this is because we're only looking at the newtype, not the impact that it has across your program.
 
-With unit testing we accept that:
-1. Writing your tests first (or as early as possible) helps you reason about your code
-2. They make sure silly mistakes don't slip through, costing us a lot more time later
-3. Test code tends to be quite routine, you don't need to think too hard about them and there are few surprises
-
-I'd argue this is all true of newtype code too.
-1. newtypes help you reason about your data structures in meaningful ways to the problem domain
-2. They add layers of protection to stop silly mistakes costing a lot of time later
-3. Once you're used to them, they become routine, they need little thought and there are few surprises
-
-You might point out that the extra newtype code also needs testing which, as I just said, could easily be 2-3x the
-length of the code being tested, however, I'd ask you to think about what you're testing.
+By moving our validtion code to a single domain type, we're decluttering the rest of our program.
 
 Let's think about a more complex type, like an email. Using built in types, we just create a validator and call it done:
 
@@ -395,49 +393,52 @@ validated, we risk that function being reused with no validation later.
 
 > It's worth noting,  we're using my "good enough, no false negatives" approach rather than a complex regex or parser,
 > which would be even more computationally expensive! See https://emailregex.com/ for a completely compliant regex
-> validation string but... if you really want to know if an email address is valid... email it.
+> validation string but... the only way to really know if an email address is valid is to email it.
 
 Here's a newtype representing an Email:
 
 ```rust
-use std::fmt;
-use std::error::Error;
+mod email_address {
+    use std::{fmt, error::Error};
 
-#[derive(Debug)]
-struct InvalidEmailAddressError;
+    #[derive(Debug)]
+    pub struct InvalidEmailAddressError;
 
-impl fmt::Display for InvalidEmailAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid Email Address")
-    }      
-}
-
-impl Error for InvalidEmailAddressError {}
-
-struct EmailAddress(String);
-
-impl EmailAddress {
-    fn from_string<S>(email: S) -> Result<EmailAddress, InvalidEmailAddressError> 
-        where S: ToString + AsRef<str>
-    {
-        match (Self::is_valid(&email)) {
-            true => Ok(EmailAddress(email.to_string())),
-            false => Err(InvalidEmailAddressError),
+    impl fmt::Display for InvalidEmailAddressError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "Invalid Email Address")
         }
     }
 
-    fn is_valid<S>(email: S) -> bool
-        where S: AsRef<str>
-    {
-        let s = email.as_ref();
-        // Must contain an @ that's not the first or last character
-        s.contains('@')
-            && s.chars().next() != Some('@')
-            && s.chars().last() != Some('@')
+    impl Error for InvalidEmailAddressError {}
+
+    pub struct EmailAddress(String);
+
+    impl EmailAddress {
+        pub fn from_string<S>(email: S) -> Result<EmailAddress, InvalidEmailAddressError>
+            where S: ToString + AsRef<str>
+        {
+            match (Self::is_valid(&email)) {
+                true => Ok(EmailAddress(email.to_string())),
+                false => Err(InvalidEmailAddressError),
+            }
+        }
+
+        pub fn is_valid<S>(email: S) -> bool
+            where S: AsRef<str>
+        {
+            let s = email.as_ref();
+            // Must contain an @ that's not the first or last character
+            s.contains('@')
+                && s.chars().next() != Some('@')
+                && s.chars().last() != Some('@')
+        }
     }
 }
 
 fn main() {
+    use email_address::EmailAddress;
+
     // Tests
     let valid_email = EmailAddress::from_string("hello@example.com");
     let invalid_email = EmailAddress::from_string("Ted");
@@ -452,8 +453,7 @@ fn main() {
 ```
 
 We've had to implement an Error type for potentially invalid addresses, and a constructor... but our validator is
-identical. While we've added a lot of code, and more than doubled the length of the test code... none of it is
-particularly complicated.
+identical, and we only add two new tests.
 
 Now, though, we only ever need to validate the email when we create the data type, which will usually be when we're
 getting that data from an external source, for example from a user or importing it from a database. This will also
