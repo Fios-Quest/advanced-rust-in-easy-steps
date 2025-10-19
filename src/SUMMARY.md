@@ -4,6 +4,6 @@
   - [NewType](./patterns/newtype.md)
   - [TypeState](./patterns/typestate.md)
   - [Builder](./patterns/builder.md)
-  - [Monads]()
+  - [Monads](./patterns/monads.md)
   - [RAII - Drop and Finalise]()
   - [Type State / State Machine]()
