@@ -192,4 +192,63 @@ The important thing for this kind of group is that:
 Benefits
 --------
 
-Encapsulating our values inside groups like this can significantly reduce the cognative overhead
+Encapsulating our values inside groups like this can significantly reduce the cognative overhead of our code, and its
+a genuine shame that we've scared people off of this approach with complex naming and annotations.
+
+Here are two piece of code written in typescript that demonstrate the power.
+
+```typescript
+class Option<T> {
+    inner: T | null,
+
+    public static some(value: T): Option<T> {
+        return new Option(value);
+    }
+
+    public static none(): Option<T> {
+        return new Option();
+    }
+
+    private constructor(value: T | null | undefined) {
+        if (value === undefined) {
+            this.inner = null;
+        } else {
+            this.inner = value;
+        }
+    }
+
+    public map<U>(f: (T) -> U): Option<U> {
+        if (this.inner == null)  {
+            return new Option();
+        }
+        return new Option(f(this.inner))
+    }
+}
+
+const div = (denominator: number) => (numerator: number): Option<number> => {
+    if (denominator == 0) {
+        return Option::none();
+    }
+    return Option::some(numerator / denominator)
+};
+
+const add = (a: number) => (b: number) =>> a + b;
+
+const div_zero = div(0);
+const div_two = div(2);
+const add_one = add(1);
+
+div_zero(6)
+    .map(div_zero)
+    .map(add_one)
+    .map(div_zero)
+    .map(console.log); // Does nothing
+
+div_zero(6)
+    .map(div_two)
+    .map(add_one)
+    .map(div_two)
+    .map(console.log); // Prints 2
+
+
+```
