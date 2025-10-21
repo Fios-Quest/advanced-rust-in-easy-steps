@@ -1,6 +1,6 @@
 [book]
-title = "Advanced Rust In Easy Steps"
-description = "Even more Rust idioms, patterns and useful tools"
+title = "Software Patterns and Coding Excellence"
+description = "Even more Rust idioms, patterns and useful tricks"
 authors = ["Daniel Mason"]
 language = "en"
 multilingual = false
