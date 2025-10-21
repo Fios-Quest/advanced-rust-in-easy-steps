@@ -309,3 +309,7 @@ div_zero(6)
 
 console.log('done');
 ```
+
+In the first example, we have to deal with two seperate types, which means we constantly need to check what type we're
+dealing with. By encapsulating our different types into one group and having the logic that manages what to do for
+different types managed inside that group, our code get's far easier to read and comprehend!
