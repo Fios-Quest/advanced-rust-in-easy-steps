@@ -195,60 +195,117 @@ Benefits
 Encapsulating our values inside groups like this can significantly reduce the cognative overhead of our code, and its
 a genuine shame that we've scared people off of this approach with complex naming and annotations.
 
-Here are two piece of code written in typescript that demonstrate the power.
+Here are two piece of code written in typescript that demonstrate the power of nomads. We'll create a function that
+divides two numbers, but if the denominator is zero, we'll treat it as no value. First we'll implement the code without
+monads:
 
 ```typescript
-class Option<T> {
-    inner: T | null,
-
-    public static some(value: T): Option<T> {
-        return new Option(value);
-    }
-
-    public static none(): Option<T> {
-        return new Option();
-    }
-
-    private constructor(value: T | null | undefined) {
-        if (value === undefined) {
-            this.inner = null;
-        } else {
-            this.inner = value;
-        }
-    }
-
-    public map<U>(f: (T) -> U): Option<U> {
-        if (this.inner == null)  {
-            return new Option();
-        }
-        return new Option(f(this.inner))
-    }
-}
-
-const div = (denominator: number) => (numerator: number): Option<number> => {
+const div = (denominator: number) => (numerator: number): number | null => {
     if (denominator == 0) {
-        return Option::none();
+        return null;
     }
-    return Option::some(numerator / denominator)
+    return numerator / denominator;
 };
 
-const add = (a: number) => (b: number) =>> a + b;
+const add = (a: number) => (b: number) => a + b;
+
+const div_zero = div(0);
+const div_two = div(2);
+const add_one = add(1);
+
+let null_example = div_zero(6);
+if (null_example !== null) {
+    null_example = add_one(null_example);
+}
+if (null_example !== null) {
+    null_example = div_zero(null_example);
+}
+if (null_example !== null) {
+    // Won't get here
+    console.log(null_example);
+}
+
+let num_example = div_two(6);
+if (num_example !== null) {
+    num_example = add_one(num_example);
+}
+if (num_example !== null) {
+    num_example = div_two(num_example);
+}
+if (num_example !== null) {
+    // Prints 2
+    console.log(num_example);
+}
+
+console.log('done');
+```
+
+If we create a proxy for Rust's Option type though (in this case we called it `Maybe`), this code gets much easier to
+read.
+
+```typescript
+# class Maybe<T> {
+#     inner: T | null,
+# 
+#     public static some(value: T): Maybe<T> {
+#         return new Maybe(value);
+#     }
+#
+#     public static none(): Maybe<T> {
+#         return new Maybe();
+#     }
+#
+#     private constructor(value: T | null | undefined) {
+#         if (value === undefined) {
+#             this.inner = null;
+#         } else {
+#             this.inner = value;
+#         }
+#     }
+#
+#     public map<U>(f: (T) -> U): Maybe<U> {
+#         if (this.inner == null)  {
+#             return new Maybe();
+#         }
+#         return new Maybe(f(this.inner))
+#     }
+#
+#     public flatten<U>() -> Maybe<U> {
+#         if (this.inner instanceof Maybe) {
+#             return this.inner.inner === null ?
+#                 Maybe.none() :
+#                 Maybe.some(this.inner.inner);
+#         }
+#         return this;
+#     }
+#
+#     public and_then<U>(f: (T) -> Maybe<U>) -> Maybe<U> {
+#         return this.map(f).flatten();
+#     }
+# }
+#
+const div = (denominator: number) => (numerator: number): Maybe<number> => {
+    if (denominator == 0) {
+        return Maybe.none();
+    }
+    return Maybe.some(numerator / denominator)
+};
+
+const add = (a: number) => (b: number) => a + b;
 
 const div_zero = div(0);
 const div_two = div(2);
 const add_one = add(1);
 
 div_zero(6)
-    .map(div_zero)
     .map(add_one)
-    .map(div_zero)
+    .and_then(div_zero)
     .map(console.log); // Does nothing
 
 div_zero(6)
-    .map(div_two)
     .map(add_one)
-    .map(div_two)
+    .and_then(div_two)
     .map(console.log); // Prints 2
 
-
+console.log('done');
 ```
