@@ -1072,6 +1072,280 @@ builder adds more complexity to your tests and error handling code.</p>
 <p>Its also worth noting that the typestate builder won’t work if you can’t guarantee each method is called at runtime.
 Methods that set a required parameter change the type of the builder, meaning you can’t put a call in a branch (such as
 an if) because you can’t reconcile the types later.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="monads"><a class="header" href="#monads">Monads</a></h1>
+<p>When programming, we are regularly take a value and perform some operation to get a new value.</p>
+<p>Let’s say we have the value <code>5</code> which is an integer. We could square the value which gives us <code>25</code> which is still an
+integer, or we could turn the value into a string which would give us <code>"5"</code> which is a different type.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">fn main () {
+</span>let twenty_five = 5 * 5;
+let five = 5.to_string();
+
+assert_eq!(twenty_five, 25);
+assert_eq!(five, "5");
+}</code></pre></pre>
+<p>We might want to perform the same operation on any integer, so we create functions that can take <em>any</em> integer and
+return our new value.</p>
+<pre><pre class="playground"><code class="language-rust edition2024">// Don't worry that there are already built in ways to do this, 
+// its for explanation only
+fn square(input: i32) -&gt; i32 {
+    input * input
+}
+
+fn to_string(input: i32) -&gt; String {
+    format!("{input}")
+}
+<span class="boring">
+</span><span class="boring">fn main() {
+</span><span class="boring">    assert_eq!(square(5), 25);
+</span><span class="boring">    assert_eq!(to_string(5), "5".to_string());
+</span><span class="boring">}</span></code></pre></pre>
+<p>This shows to types of function:</p>
+<ul>
+<li>A function that maintains the input type: it takes a value of type <code>T</code> and returns a value of type <code>T</code>.
+We’ll refer to this as <code>f(T) -&gt; T</code>.</li>
+<li>A function that changes the input type: it takes a value of type <code>T</code> and returns a value of type <code>U</code>.
+We’ll refer to this as <code>f(T) -&gt; T</code>.</li>
+</ul>
+<p>Typically with functions, we put the value into the function and get a value back out, but what if we reverse this.</p>
+<p>What if we have a container for our value, we’ll call it <code>M</code>. <code>M</code> can contain any valid value of type <code>T</code> and could be
+represented as <code>M&lt;T&gt;</code>. We still have our two types of function that can take a value of <code>T</code>, but they can’t take a value
+of <code>M&lt;T&gt;</code> because it’s a different type.</p>
+<p>What we could do instead is give the function to the container and ask it to apply it to the inner type.</p>
+<p>If we start with <code>M&lt;T&gt;</code> and give it <code>f(T) -&gt; T</code> then the result is <code>M&lt;T&gt;</code>. But, if we start with <code>M&lt;T&gt;</code> and give it
+<code>f(T) -&gt; U</code> then the result is <code>M&lt;U&gt;</code>.</p>
+<p>In practice this might look like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">fn square(input: i32) -&gt; i32 {
+</span><span class="boring">    input * input
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn to_string(input: i32) -&gt; String {
+</span><span class="boring">    format!("{input}")
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct Container&lt;T&gt; {
+    inner_value: T,
+}
+
+impl&lt;T&gt; Container&lt;T&gt; {
+    fn apply&lt;U, F: FnOnce(T) -&gt; U&gt;(self, f: F) -&gt; Container&lt;U&gt; {
+        Container {
+            inner_value: f(self.inner_value)
+        }
+    }
+}
+
+<span class="boring">fn main() {
+</span>let five = Container { inner_value: 5 };
+let result = five.apply(square).apply(to_string);
+assert_eq!(result.inner_value, "25".to_string());
+<span class="boring">}</span></code></pre></pre>
+<h2 id="why-would-you-do-this"><a class="header" href="#why-would-you-do-this">Why would you do this?</a></h2>
+<p>Our container, <code>M</code>, could contain more types. By delegating the work to the container type, we could allow our container
+type to decide how (or even if) the function operates on its internal data.</p>
+<p>Let’s try creating a container which contains two types, an arbitrary type <code>T</code>, and the unit type <code>()</code>. In this
+container, when applying a function that takes <code>T</code> to our container, it only needs to apply it if the container contains
+a value of type <code>T</code>, otherwis it can ignore it.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">fn square(input: i32) -&gt; i32 {
+</span><span class="boring">    input * input
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn to_string(input: i32) -&gt; String {
+</span><span class="boring">    format!("{input}")
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, PartialEq)]
+</span>enum MaybeContainer&lt;T&gt; {
+    ContainsSomething(T),
+    ContainsNothing(())
+}
+
+impl&lt;T&gt; MaybeContainer&lt;T&gt; {
+    fn apply&lt;U, F: FnOnce(T) -&gt; U&gt;(self, f: F) -&gt; MaybeContainer&lt;U&gt; {
+        match self {
+            Self::ContainsSomething(x) =&gt; MaybeContainer::ContainsSomething(f(x)),
+            Self::ContainsNothing(()) =&gt; MaybeContainer::ContainsNothing(()),
+        }
+    }
+}
+
+<span class="boring">fn main() {
+</span>let five = MaybeContainer::ContainsSomething(5);
+let result = five.apply(square).apply(to_string);
+assert_eq!(result, MaybeContainer::ContainsSomething("25".to_string()));
+
+let nothing: MaybeContainer&lt;i32&gt; = MaybeContainer::ContainsNothing(());
+let result = nothing.apply(square).apply(to_string);
+assert_eq!(result, MaybeContainer::ContainsNothing(()));
+<span class="boring">}</span></code></pre></pre>
+<p>This looks a bit familiar right? Let’s quickly tidy this up:</p>
+<ul>
+<li>we don’t need to write in the unit type as its literally the type representation of nothing</li>
+<li>the <code>apply</code> method name isn’t very specific, we always need a function that takes <code>T</code> and returns <code>U</code> (even if they’re
+both the same type)</li>
+<li>we’ll shorten the name of the container and its varints. It represents the concepts of something or nothing,
+effectivily an optional type</li>
+</ul>
+<p>So maybe it should look more like this:</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">fn square(input: i32) -&gt; i32 {
+</span><span class="boring">    input * input
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn to_string(input: i32) -&gt; String {
+</span><span class="boring">    format!("{input}")
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">#[derive(Debug, PartialEq)]
+</span>enum Option&lt;T&gt; {
+    Some(T),
+    None,
+}
+
+impl&lt;T&gt; Option&lt;T&gt; {
+    fn apply&lt;U, F: FnOnce(T) -&gt; U&gt;(self, f: F) -&gt; Option&lt;U&gt; {
+        match self {
+            Self::Some(x) =&gt; Option::Some(f(x)),
+            Self::None =&gt; Option::None,
+        }
+    }
+}
+<span class="boring">
+</span><span class="boring">fn main() {
+</span><span class="boring">let five = Option::Some(5);
+</span><span class="boring">let result = five.apply(square).apply(to_string);
+</span><span class="boring">assert_eq!(result, Option::Some("25".to_string()));
+</span><span class="boring">
+</span><span class="boring">let nothing: Option&lt;i32&gt; = Option::None;
+</span><span class="boring">let result = nothing.apply(square).apply(to_string);
+</span><span class="boring">assert_eq!(result, Option::None);
+</span><span class="boring">}</span></code></pre></pre>
+<p>Yeap, we just recreated Rust’s <code>Option</code> type.</p>
+<p>Our groups can contain more than something or nothing. They could contain a type that represents the concept of
+successful execution, or an error, eg <code>Result&lt;T, E&gt;</code>. In Rust, the Result type generics, <code>T</code> and <code>E</code> could be the same
+concrete type, for example, <code>String</code>. In order to differentiate them inside the result we have seperate functions
+for applying functions to each; <code>map()</code>, and <code>map_err()</code>.</p>
+<h2 id="rules--guidelines"><a class="header" href="#rules--guidelines">Rules / Guidelines</a></h2>
+<p>The important thing for this kind of group is that:</p>
+<ul>
+<li>For a given group, a value representable as a type inside that group, should be convertable to that group without
+its value changing. i.e. there must be a way of going from <code>T -&gt; m&lt;T&gt;</code> without the inner value changing.</li>
+<li>There needs to be a way to apply a function to the inner types such that <code>f(T) -&gt; U</code> can be applied to <code>m&lt;T&gt;</code> to
+produce <code>m&lt;U&gt;</code></li>
+</ul>
+<h2 id="benefits"><a class="header" href="#benefits">Benefits</a></h2>
+<p>Encapsulating our values inside groups like this can significantly reduce the cognative overhead of our code, and its
+a genuine shame that we’ve scared people off of this approach with complex naming and annotations.</p>
+<p>Here are two piece of code written in typescript that demonstrate the power of nomads. We’ll create a function that
+divides two numbers, but if the denominator is zero, we’ll treat it as no value. First we’ll implement the code without
+monads:</p>
+<pre><code class="language-typescript">const div = (denominator: number) =&gt; (numerator: number): number | null =&gt; {
+    if (denominator == 0) {
+        return null;
+    }
+    return numerator / denominator;
+};
+
+const add = (a: number) =&gt; (b: number) =&gt; a + b;
+
+const div_zero = div(0);
+const div_two = div(2);
+const add_one = add(1);
+
+let null_example = div_zero(6);
+if (null_example !== null) {
+    null_example = add_one(null_example);
+}
+if (null_example !== null) {
+    null_example = div_zero(null_example);
+}
+if (null_example !== null) {
+    // Won't get here
+    console.log(null_example);
+}
+
+let num_example = div_two(6);
+if (num_example !== null) {
+    num_example = add_one(num_example);
+}
+if (num_example !== null) {
+    num_example = div_two(num_example);
+}
+if (num_example !== null) {
+    // Prints 2
+    console.log(num_example);
+}
+
+console.log('done');
+</code></pre>
+<p>If we create a proxy for Rust’s Option type though (in this case we called it <code>Maybe</code>), this code gets much easier to
+read.</p>
+<pre><code class="language-typescript"># class Maybe&lt;T&gt; {
+#     inner: T | null,
+# 
+#     public static some(value: T): Maybe&lt;T&gt; {
+#         return new Maybe(value);
+#     }
+#
+#     public static none(): Maybe&lt;T&gt; {
+#         return new Maybe();
+#     }
+#
+#     private constructor(value: T | null | undefined) {
+#         if (value === undefined) {
+#             this.inner = null;
+#         } else {
+#             this.inner = value;
+#         }
+#     }
+#
+#     public map&lt;U&gt;(f: (T) -&gt; U): Maybe&lt;U&gt; {
+#         if (this.inner == null)  {
+#             return new Maybe();
+#         }
+#         return new Maybe(f(this.inner))
+#     }
+#
+#     public flatten&lt;U&gt;() -&gt; Maybe&lt;U&gt; {
+#         if (this.inner instanceof Maybe) {
+#             return this.inner.inner === null ?
+#                 Maybe.none() :
+#                 Maybe.some(this.inner.inner);
+#         }
+#         return this;
+#     }
+#
+#     public and_then&lt;U&gt;(f: (T) -&gt; Maybe&lt;U&gt;) -&gt; Maybe&lt;U&gt; {
+#         return this.map(f).flatten();
+#     }
+# }
+#
+const div = (denominator: number) =&gt; (numerator: number): Maybe&lt;number&gt; =&gt; {
+    if (denominator == 0) {
+        return Maybe.none();
+    }
+    return Maybe.some(numerator / denominator)
+};
+
+const add = (a: number) =&gt; (b: number) =&gt; a + b;
+
+const div_zero = div(0);
+const div_two = div(2);
+const add_one = add(1);
+
+div_zero(6)
+    .map(add_one)
+    .and_then(div_zero)
+    .map(console.log); // Does nothing
+
+div_zero(6)
+    .map(add_one)
+    .and_then(div_two)
+    .map(console.log); // Prints 2
+
+console.log('done');
+</code></pre>
+<p>In the first example, we have to deal with two seperate types, which means we constantly need to check what type we’re
+dealing with. By encapsulating our different types into one group and having the logic that manages what to do for
+different types managed inside that group, our code get’s far easier to read and comprehend!</p>
 
                     </main>
 
