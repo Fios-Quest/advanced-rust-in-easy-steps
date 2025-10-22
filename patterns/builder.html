@@ -214,8 +214,8 @@ required and some of it is not.</p>
 }
 <span class="boring">}</span></code></pre></pre>
 <p>There are arguably two versions of this pattern, a simpler version that will work in just about any language that I’m
-going to refer to as “Builder Lite”, and a more complex version that only works in languages, the
-“<a href="./typestate.html">Typestate</a> Builder”. Each has their own pros and cons, and we’ll go over those too.</p>
+going to refer to as “Builder Lite”, and a more complex version that only works in languages with strict generic typing,
+the “<a href="./typestate.html">Typestate</a> Builder”. Each has their own pros and cons, and we’ll go over those too.</p>
 <h2 id="builder-lite"><a class="header" href="#builder-lite">Builder Lite</a></h2>
 <p>The traditional builder pattern uses a type that mirrors the type you want to build but everything is optional. We
 use methods to update each field, and then have a finalizer that takes the data we’ve stored in the builder and attempts
@@ -342,6 +342,21 @@ struct Marker;
 <span class="boring">}</span></code></pre></pre>
 <p>This is where <code>PhantomData</code> comes in. It’s a zero-sized marker that “uses” the types in generics, allowing you to use
 generics as nothing more than a compile time marker.</p>
+<pre><pre class="playground"><code class="language-rust edition2024">use std::marker::PhantomData;
+
+struct GoodExample&lt;T&gt; {
+    data: String,
+    marker_for_t: PhantomData&lt;T&gt;,
+}
+
+struct Marker;
+
+<span class="boring">fn main() {
+</span>let example = GoodExample::&lt;Marker&gt; {
+    data: "This will work!".to_string(),
+    marker_for_t: PhantomData,
+};
+<span class="boring">}</span></code></pre></pre>
 <p>Let’s build our builder again using this method.</p>
 <pre><pre class="playground"><code class="language-rust edition2024">use std::error::Error;
 use std::collections::HashSet;
@@ -487,8 +502,8 @@ runtime validation, we get compile time validation!</p>
 the type system, and you can arguably be sure you’ve used the builder correctly through tests. But using the lite
 builder adds more complexity to your tests and error handling code.</p>
 <p>Its also worth noting that the typestate builder won’t work if you can’t guarantee each method is called at runtime.
-Methods that set a required parameter change the type of the builder, meaning you put a call in a branch (such as an if)
-you can’t reconcile the types later.</p>
+Methods that set a required parameter change the type of the builder, meaning you can’t put a call in a branch (such as
+an if) because you can’t reconcile the types later.</p>
 
                     </main>
 
