@@ -4,25 +4,13 @@ Fluent Interface
 We often group data together into structs or objects.
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 struct User {
     // This field will remain immutable
     username: Username,
@@ -45,13 +33,14 @@ impl User {
 // --- Usage ---
 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let date_of_birth = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 let mut yuki = User::new(username);
 
 yuki.email = Some(email);
 yuki.date_of_birth = Some(date_of_birth);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
@@ -61,25 +50,13 @@ to do any validation, or manipulation, etc. In our `User` example above, it migh
 `Option`.
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 struct User {
     // Direct access to these properties is forbidden
     username: Username,
@@ -109,13 +86,14 @@ impl User {
 // --- Usage ---
 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let date_of_birth = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 let mut yuki = User::new(username);
 
 yuki.set_email(email);
 yuki.set_date_of_birth(date_of_birth);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
@@ -126,25 +104,13 @@ We can make this more "fluent" simply by returning a reference to that object af
 
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 struct User {
     username: Username,
     email: Option<Email>,
@@ -175,13 +141,14 @@ impl User {
 // --- Usage ---
 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let date_of_birth = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 let mut yuki = User::new(username);
 
 yuki.set_email(email)
     .set_date_of_birth(date_of_birth);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
@@ -205,25 +172,13 @@ it. That's why we stored `yuki` first, then modified it, effectively two steps.
 If we passed ownership back and forth instead, we could create a single chain:
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 # struct User {
 #     username: Username,
 #     email: Option<Email>,
@@ -254,12 +209,13 @@ impl User {
 // --- Usage ---
 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let date_of_birth = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 let yuki = User::new(username)
     .set_email(email)
     .set_date_of_birth(date_of_birth);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
@@ -271,25 +227,13 @@ However, there's a downside to this too. If we _did_ want to modify a single val
 ownership back from the method:
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 # struct User {
 #     username: Username,
 #     email: Option<Email>,
@@ -317,11 +261,12 @@ ownership back from the method:
 # }
 # 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let dob = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 # let yuki = User::new(username);
-let yuki = yuki.set_email(email); 
+let yuki = yuki.set_email(email);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
@@ -334,30 +279,18 @@ The other quirk is more of a nice touch. What if our setter could fail? Obviousl
 long as we're able to bubble the error.
 
 ```rust
-# /// Using this to pretend we're using actual new types without the overhead
-# use std::str::FromStr;
-# macro_rules! fake_from {
-#     ($struct:ident) => {
-#         impl FromStr for $struct {
-#             type Err = ();
-# 
-#             fn from_str(s: &str) -> Result<Self, Self::Err> {
-#                 Ok(Self(s.to_string()))
-#             }
-#         }
-#     }
-# }
+# #[derive(Debug)]
 # struct Username(String);
-# fake_from!(Username);
+# #[derive(Debug)]
 # struct Email(String);
-# fake_from!(Email);
+# #[derive(Debug)]
 # struct DateOfBirth(String);
 # impl DateOfBirth {
 #     fn is_old_enough(&self) -> bool {
 #         true
 #     }
 # }
-# fake_from!(DateOfBirth);
+# #[derive(Debug)]
 # struct User {
 #     username: Username,
 #     email: Option<Email>,
@@ -397,12 +330,13 @@ impl User {
 // --- Usage ---
 
 # fn main() -> Result<(), ()> {
-# let username = Username::from_str("Yuki")?;
-# let dob = DateOfBirth::from_str("2009-05-01")?;
-# let email = Email::from_str("yuki@example.com")?;
+# let username = Username("Yuki".to_string());
+# let date_of_birth = DateOfBirth("2009-05-01".to_string());
+# let email = Email("yuki@example.com".to_string());
 let yuki = User::new(username)
-    .set_dob(dob)? // we can continue the chain despite the result
+    .set_dob(date_of_birth)? // we can continue the chain despite the result
     .set_email(email);
+# println!("{yuki:#?}");
 # Ok(())
 # }
 ```
