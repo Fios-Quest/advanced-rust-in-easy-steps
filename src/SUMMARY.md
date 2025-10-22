@@ -5,7 +5,7 @@
   - [TypeState](./patterns/typestate.md)
   - [Fluent Interface]()
   - [Builder](./patterns/builder.md)
-  - [Monads]()
+  - [Monads](./patterns/monads.md)
   - [RAII - Drop and Finalise]()
   - [Dependency Injection]()
   - [Bridge Pattern]()?
