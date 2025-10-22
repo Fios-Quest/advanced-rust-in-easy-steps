@@ -100,7 +100,8 @@ yuki.set_date_of_birth(date_of_birth);
 
 However, this is still a little bit clunky as we have to refer to the underlying variable (`yuki`) multiple times.
 
-We can make this more "fluent" simply by returning a reference to that object after each call of a setter.
+We can make this more "fluent" simply by returning a reference to that object after each call of a setter. This allows
+us to chain the setter methods, making the code clearer and easier to read.
 
 
 ```rust
