@@ -1,35 +1,38 @@
 Typestate
 =========
 
-The typestate pattern encodes state into type information.
+The typestate pattern encodes state into type information. This is useful because this information exists when you
+write the program but not when you run it, allowing you to enforce domain logic with minimal overhead.
 
-Let's imagine we want to represent a Pull Request. The request might be opened immediately ready for review, or opened
-as a draft, moving to ready for review later. Once ready for review, the PR needs to receive one or more approvals after
-which it can be merged. If after being made ready for review, the PR receives a rejection, the PR is considered to be
-Rejected, even if it's previously been approved.
+State
+-----
 
-This is a simplified model but is complex enough to show the benefits of TypeState.
+Lets imagine a simplified pull request process. We can open a new pull request, which then must be approved by at least
+one person, before it's merged. Multiple people can approve it, but if anyone rejects it (even after its approved) it
+can no longer be merged.
 
 ```mermaid
-flowchart
-    Start([Open])
-    A[Draft PR]
-    B[Ready for Review]
-    C[Approved]
-    D[Rejected]
-    E[Merged]
-    End([Close])
+%%{ init: { 'flowchart': {'defaultRenderer': 'elk' } } }%%
+flowchart LR
+    A --->|foo| B
+    B --->|bar| B
+````
+```mermaid
+---
+config:
+  layout: elk
+---
+flowchart LR
+    O[Open]
+    A[Approved]
+    R[Rejected]
+    M[Merged]
 
-    Start --> A
-    Start --> B
-    A -- Mark as Ready --> B
-    B -- Approve --> C
-    C -- Approve --> C
-    C -- Reject --> D
-    B -- Reject --> D
-    C -- Merge --> E
-    D --> End
-    E --> End
+    O -- Approve --> A
+    A -- Approve --> A
+    O -- Reject --> R
+    A -- Reject --> R
+    A -- Merge --> M
 ```
 
 Let's try to model one small part of this flow in a traditional way, the "approve" action.
@@ -41,10 +44,9 @@ changed.
 ```rust
 struct InvalidStateError;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Status {
-    Draft,
-    ReadyForReview,
+    Open,
     Approved,
     Rejected,
     Merged
@@ -57,8 +59,26 @@ struct PullRequest {
 
 impl PullRequest {
     fn approve(&mut self) -> Result<(), InvalidStateError> {
-        if self.status == Status::ReadyForReview || self.status == Status::Approved {
+        if self.status == Status::Open || self.status == Status::Approved {
             self.status = Status::Approved;
+            Ok(())
+        } else {
+            Err(InvalidStateError)
+        }
+    }
+
+    fn reject(&mut self) -> Result<(), InvalidStateError> {
+        if self.status == Status::Open || self.status == Status::Approved {
+            self.status = Status::Rejected;
+            Ok(())
+        } else {
+            Err(InvalidStateError)
+        }
+    }
+
+    fn merge(&mut self) -> Result<(), InvalidStateError> {
+        if self.status == Status::Approved {
+            self.status = Status::Merged;
             Ok(())
         } else {
             Err(InvalidStateError)
@@ -67,25 +87,26 @@ impl PullRequest {
 }
 # 
 # fn main () {
-// You can approve a PR with Ready for Review or already Approved
-let mut pr = PullRequest { status: Status::ReadyForReview };
+// You can approve a PR that's just been opened or already Approved
+let mut pr = PullRequest { status: Status::Open };
 assert!(pr.approve().is_ok());
+assert_eq!(pr.status, Status::Approved);
 assert!(pr.approve().is_ok());
 
-// You can not approve a rejected PR, but you need to handle the error
-pr.status = Status::Rejected;
+// You can not approve or merge rejected PR
+let mut pr = PullRequest { status: Status::Rejected };
 assert!(pr.approve().is_err());
+assert!(pr.merge().is_err());
 # }
 ```
 
-We can conceptually understand that a PR has a state, but this then adds complexity to our logic when we want to change
-that state if there are rules around how it can change.
-
-If instead we understand a PRs as being in different states, this can reduce the logical complexity.
+We've written up our three state change operations but we've had to write a lot of branching logic into each method to
+check that the operation is only being run on a PR in a valid state. If it wasn't in a valid state we produce errors
+that now need to be dealt with.
 
 
 ```rust
-struct PullRequestReadyForReview {
+struct PullRequestOpen {
     // ...other PR details ...
 }
 
@@ -97,10 +118,19 @@ struct PullRequestRejected {
     // ...other PR details ...
 }
 
+struct PullRequestMerged {
+    // ...other PR details...
+}
 
-impl PullRequestReadyForReview {
+impl PullRequestOpen {
     fn approve(self) -> PullRequestApproved {
         PullRequestApproved {
+            // ... move self into PullRequestApproved ...
+        }
+    }
+
+    fn reject(self) -> PullRequestRejected {
+        PullRequestRejected {
             // ... move self into PullRequestApproved ...
         }
     }
@@ -110,15 +140,33 @@ impl PullRequestApproved {
     fn approve(self) -> PullRequestApproved {
         self
     }
-}
 
+    fn reject(self) -> PullRequestRejected {
+        PullRequestRejected {
+            // ... move self into PullRequestApproved ...
+        }
+    }
+
+    fn merge(self) -> PullRequestMerged {
+        PullRequestMerged {
+            // ... move self into PullRequestApproved ...
+        }
+    }
+}
 
 # 
 # fn main () {
+let open_pr = PullRequestOpen { };
+
+// You can not merge an open PR, the next line won't compile
+// let merged_pr = open_pr.merge();
+
 // You can approve a PR with Ready for Review or already Approved
-let ready_pr = PullRequestReadyForReview { };
-let approved_pr = ready_pr.approve();
+let approved_pr = open_pr.approve();
 let still_approved = approved_pr.approve();
+
+// Then it can be merged
+let merged_pr = still_approved.merge();
 
 // The `.approve()` method doesn't exist for rejected PRs, commented line won't compile
 let rejected_pr = PullRequestRejected { };
@@ -135,5 +183,6 @@ case no) potential error states, and everything is logically subdivided making m
 In the example we've given here, we consume the type each time we change state. Generally in Rust it's better to pass
 references rather than ownership, but in the case of transitioning state we want to return a new type. Often the old
 type will contain owned data that needs to be moved to the new type, and we'll rarely want to keep the old state around
-but your needs may differ.
+but your needs may differ. If you regularly need to keep the old state you could pass by reference, but if you only
+occasionally need to keep the old state, you could clone it first.
 
