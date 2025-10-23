@@ -743,6 +743,314 @@ references rather than ownership, but in the case of transitioning state we want
 type will contain owned data that needs to be moved to the new type, and we’ll rarely want to keep the old state around
 but your needs may differ. If you regularly need to keep the old state you could pass by reference, but if you only
 occasionally need to keep the old state, you could clone it first.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="fluent-interface"><a class="header" href="#fluent-interface">Fluent Interface</a></h1>
+<p>We often group data together into structs or objects.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">#[derive(Debug)]
+</span>struct User {
+    // This field will remain immutable
+    username: Username,
+
+    // We want to be able to change these fields
+    pub email: Option&lt;Email&gt;,
+    pub date_of_birth: Option&lt;DateOfBirth&gt;,
+}
+
+impl User {
+    fn new(username: Username) -&gt; Self {
+        Self {
+            username,
+            email: None,
+            date_of_birth: None,
+        }
+    }
+}
+
+// --- Usage ---
+
+<span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span>let mut yuki = User::new(username);
+
+yuki.email = Some(email);
+yuki.date_of_birth = Some(date_of_birth);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>Depending on the nature of the data we might want to manage access through getters and setters, particularly if we need
+to do any validation, or manipulation, etc. In our <code>User</code> example above, it might be good to not have to specify the
+<code>Option</code>.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">#[derive(Debug)]
+</span>struct User {
+    // Direct access to these properties is forbidden
+    username: Username,
+    email: Option&lt;Email&gt;,
+    date_of_birth: Option&lt;DateOfBirth&gt;,
+}
+
+impl User {
+    // ... snip ...
+<span class="boring">    fn new(username: Username) -&gt; Self {
+</span><span class="boring">        Self {
+</span><span class="boring">            username,
+</span><span class="boring">            email: None,
+</span><span class="boring">            date_of_birth: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span>
+    fn set_email(&amp;mut self, email: Email) {
+        self.email = Some(email)
+    }
+
+    fn set_date_of_birth(&amp;mut self, date_of_birth: DateOfBirth) {
+        self.date_of_birth = Some(date_of_birth);
+    }
+}
+
+// --- Usage ---
+
+<span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span>let mut yuki = User::new(username);
+
+yuki.set_email(email);
+yuki.set_date_of_birth(date_of_birth);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>However, this is still a little bit clunky as we have to refer to the underlying variable (<code>yuki</code>) multiple times.</p>
+<p>We can make this more “fluent” simply by returning a reference to that object after each call of a setter. This allows
+us to chain the setter methods, making the code clearer and easier to read.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">#[derive(Debug)]
+</span>struct User {
+    username: Username,
+    email: Option&lt;Email&gt;,
+    date_of_birth: Option&lt;DateOfBirth&gt;,
+}
+
+impl User {
+    // ... snip ...
+<span class="boring">    fn new(username: Username) -&gt; Self {
+</span><span class="boring">        Self {
+</span><span class="boring">            username,
+</span><span class="boring">            email: None,
+</span><span class="boring">            date_of_birth: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span>
+    fn set_email(&amp;mut self, email: Email) -&gt; &amp;mut Self {
+        self.email = Some(email);
+        self
+    }
+
+    fn set_date_of_birth(&amp;mut self, date_of_birth: DateOfBirth) -&gt; &amp;mut Self {
+        self.date_of_birth = Some(date_of_birth);
+        self
+    }
+}
+
+// --- Usage ---
+
+<span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span>let mut yuki = User::new(username);
+
+yuki.set_email(email)
+    .set_date_of_birth(date_of_birth);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<h2 id="rust-quirks"><a class="header" href="#rust-quirks">Rust Quirks</a></h2>
+<p>There are two quirks to this pattern that impact Rust specifically.</p>
+<p>Firstly, this pattern works in many languages, and particularly in languages that use things like pass by reference and
+copy on write by default, you can sort of stop thinking about it there. Rust has very specific memory management rules
+to think about though.</p>
+<p>This means we need to consider whether our fluent interface will use references or take and return ownership.</p>
+<p>There are pros and cons to each approach.</p>
+<p>Using references in our previous example, we need to make sure the owned data exists somewhere before we start modifying
+it. That’s why we stored <code>yuki</code> first, then modified it, effectively two steps.</p>
+<p>If we passed ownership back and forth instead, we could create a single chain:</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct User {
+</span><span class="boring">    username: Username,
+</span><span class="boring">    email: Option&lt;Email&gt;,
+</span><span class="boring">    date_of_birth: Option&lt;DateOfBirth&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span>impl User {
+    // ... snip ...
+<span class="boring">    fn new(username: Username) -&gt; Self {
+</span><span class="boring">        Self {
+</span><span class="boring">            username,
+</span><span class="boring">            email: None,
+</span><span class="boring">            date_of_birth: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span>
+    fn set_email(mut self, email: Email) -&gt; Self {
+        self.email = Some(email);
+        self
+    }
+
+    fn set_date_of_birth(mut self, date_of_birth: DateOfBirth) -&gt; Self {
+        self.date_of_birth = Some(date_of_birth);
+        self
+    }
+}
+
+// --- Usage ---
+
+<span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span>let yuki = User::new(username)
+    .set_email(email)
+    .set_date_of_birth(date_of_birth);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>In addition to this giving us a slightly nicer flow, you might notice that <code>yuki</code> doesn’t need to be mutable, we’re
+encapsulating the mutability inside the methods where we need it.</p>
+<p>However, there’s a downside to this too. If we <em>did</em> want to modify a single value, we’d have to make sure we take
+ownership back from the method:</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct User {
+</span><span class="boring">    username: Username,
+</span><span class="boring">    email: Option&lt;Email&gt;,
+</span><span class="boring">    date_of_birth: Option&lt;DateOfBirth&gt;,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl User {
+</span><span class="boring">    fn new(username: Username) -&gt; Self {
+</span><span class="boring">        Self {
+</span><span class="boring">            username,
+</span><span class="boring">            email: None,
+</span><span class="boring">            date_of_birth: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn set_email(mut self, email: Email) -&gt; Self {
+</span><span class="boring">        self.email = Some(email);
+</span><span class="boring">        self
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn set_date_of_birth(mut self, date_of_birth: DateOfBirth) -&gt; Self {
+</span><span class="boring">        self.date_of_birth = Some(date_of_birth);
+</span><span class="boring">        self
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span><span class="boring">let yuki = User::new(username);
+</span>let yuki = yuki.set_email(email);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>Which version you use will be up to you and likely depend on your circumstances. You could even mix and match (though
+you will need to give the methods different names).</p>
+<p>The other quirk is more of a nice touch. What if our setter could fail? Obviously, it’s Rust, we need to return a
+<code>Result</code>. Luckily, the question mark operator allows us to unwrap an <code>Ok</code>, which means we can continue the chain so
+long as we’re able to bubble the error.</p>
+<pre><pre class="playground"><code class="language-rust edition2024"><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Username(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Email(String);
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct DateOfBirth(String);
+</span><span class="boring">impl DateOfBirth {
+</span><span class="boring">    fn is_old_enough(&amp;self) -&gt; bool {
+</span><span class="boring">        true
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct User {
+</span><span class="boring">    username: Username,
+</span><span class="boring">    email: Option&lt;Email&gt;,
+</span><span class="boring">    date_of_birth: Option&lt;DateOfBirth&gt;,
+</span><span class="boring">}
+</span><span class="boring">struct NotOldEnoughError;
+</span><span class="boring">impl From&lt;NotOldEnoughError&gt; for () {
+</span><span class="boring">    fn from(value: NotOldEnoughError) -&gt; Self {
+</span><span class="boring">        ()
+</span><span class="boring">    }
+</span><span class="boring">}
+</span><span class="boring">
+</span>impl User {
+    // ... snip ...
+<span class="boring">    fn new(username: Username) -&gt; Self {
+</span><span class="boring">        Self {
+</span><span class="boring">            username,
+</span><span class="boring">            email: None,
+</span><span class="boring">            date_of_birth: None,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">
+</span><span class="boring">    fn set_email(mut self, email: Email) -&gt; Self {
+</span><span class="boring">        self.email = Some(email);
+</span><span class="boring">        self
+</span><span class="boring">    }
+</span>
+    fn set_dob(mut self, dob: DateOfBirth) -&gt; Result&lt;Self, NotOldEnoughError&gt; {
+        if !dob.is_old_enough() {
+            return Err(NotOldEnoughError);
+        }
+        self.date_of_birth = Some(dob);
+        Ok(self)
+    }
+}
+
+// --- Usage ---
+
+<span class="boring">fn main() -&gt; Result&lt;(), ()&gt; {
+</span><span class="boring">let username = Username("Yuki".to_string());
+</span><span class="boring">let date_of_birth = DateOfBirth("2009-05-01".to_string());
+</span><span class="boring">let email = Email("yuki@example.com".to_string());
+</span>let yuki = User::new(username)
+    .set_dob(date_of_birth)? // we can continue the chain despite the result
+    .set_email(email);
+<span class="boring">println!("{yuki:#?}");
+</span><span class="boring">Ok(())
+</span><span class="boring">}</span></code></pre></pre>
+<p>Using this pattern allows us to write much more readable code!</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="builder"><a class="header" href="#builder">Builder</a></h1>
 <p>The builder pattern allows us to construct complex types in steps.</p>
 <p>For example, imagine we have a ‘User’ struct that holds a lot of information on a user. Some of that information is
