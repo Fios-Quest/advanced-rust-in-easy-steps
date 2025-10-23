@@ -3,7 +3,7 @@
 - [Patterns](./patterns.md)
   - [NewType](./patterns/newtype.md)
   - [TypeState](./patterns/typestate.md)
-  - [Fluent Interface]()
+  - [Fluent Interface](./patterns/fluent-interface.md)
   - [Builder](./patterns/builder.md)
   - [Monads](./patterns/monads.md)
   - [RAII - Drop and Finalise]()
